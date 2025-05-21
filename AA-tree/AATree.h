@@ -1,4 +1,4 @@
-#include <functional>
+я╗┐#include <functional>
 
 template <typename T>
 class AATree
@@ -43,28 +43,28 @@ private:
   void clear(Node * node);
 };
 
-//Создаём класс, который наследуется от std::less и сравнивает данные типа Т  
+//╨б╨╛╨╖╨┤╨░╤С╨╝ ╨║╨╗╨░╤Б╤Б, ╨║╨╛╤В╨╛╤А╤Л╨╣ ╨╜╨░╤Б╨╗╨╡╨┤╤Г╨╡╤В╤Б╤П ╨╛╤В std::less ╨╕ ╤Б╤А╨░╨▓╨╜╨╕╨▓╨░╨╡╤В ╨┤╨░╨╜╨╜╤Л╨╡ ╤В╨╕╨┐╨░ ╨в  
 template <typename T>
 class AATree<T>::Comparator : public std::less<T>
 {
-  //std::less поддерживает operator()
+  //std::less ╨┐╨╛╨┤╨┤╨╡╤А╨╢╨╕╨▓╨░╨╡╤В operator()
 };
 
-//Конструктор без параметров
+//╨Ъ╨╛╨╜╤Б╤В╤А╤Г╨║╤В╨╛╤А ╨▒╨╡╨╖ ╨┐╨░╤А╨░╨╝╨╡╤В╤А╨╛╨▓
 template <typename T>
 AATree<T>::AATree()
 {
   this->root = nullptr;
 }
 
-//Деструктор
+//╨Ф╨╡╤Б╤В╤А╤Г╨║╤В╨╛╤А
 template <typename T>
 AATree<T>::~AATree()
 {
   clear();
 }
 
-//Пользовательский метод, который вызывает внутренний метод
+//╨Я╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╨╡╨╗╤М╤Б╨║╨╕╨╣ ╨╝╨╡╤В╨╛╨┤, ╨║╨╛╤В╨╛╤А╤Л╨╣ ╨▓╤Л╨╖╤Л╨▓╨░╨╡╤В ╨▓╨╜╤Г╤В╤А╨╡╨╜╨╜╨╕╨╣ ╨╝╨╡╤В╨╛╨┤
 template <typename T>
 void AATree<T>::insert(T & data)
 {
@@ -74,39 +74,39 @@ void AATree<T>::insert(T & data)
 template <typename T>
 typename AATree<T>::Node * AATree<T>::insert(Node * node, T & data)
 {
-  //Создаём компаратор
+  //╨б╨╛╨╖╨┤╨░╤С╨╝ ╨║╨╛╨╝╨┐╨░╤А╨░╤В╨╛╤А
   Comparator compare;
 
-  //Если узел null, то создаём новый узел с новым значением
+  //╨Х╤Б╨╗╨╕ ╤Г╨╖╨╡╨╗ null, ╤В╨╛ ╤Б╨╛╨╖╨┤╨░╤С╨╝ ╨╜╨╛╨▓╤Л╨╣ ╤Г╨╖╨╡╨╗ ╤Б ╨╜╨╛╨▓╤Л╨╝ ╨╖╨╜╨░╤З╨╡╨╜╨╕╨╡╨╝
   if (node == nullptr)
   {
     node = new Node(data);
     return node;
   }
-  //Если новое значение меньше, идём в левое поддерево
+  //╨Х╤Б╨╗╨╕ ╨╜╨╛╨▓╨╛╨╡ ╨╖╨╜╨░╤З╨╡╨╜╨╕╨╡ ╨╝╨╡╨╜╤М╤И╨╡, ╨╕╨┤╤С╨╝ ╨▓ ╨╗╨╡╨▓╨╛╨╡ ╨┐╨╛╨┤╨┤╨╡╤А╨╡╨▓╨╛
   else if (compare(data, node->data))
   {
     node->left = insert(node->left, data)
   }
-  //Если новое значение больше, идём в правое поддерево
+  //╨Х╤Б╨╗╨╕ ╨╜╨╛╨▓╨╛╨╡ ╨╖╨╜╨░╤З╨╡╨╜╨╕╨╡ ╨▒╨╛╨╗╤М╤И╨╡, ╨╕╨┤╤С╨╝ ╨▓ ╨┐╤А╨░╨▓╨╛╨╡ ╨┐╨╛╨┤╨┤╨╡╤А╨╡╨▓╨╛
   else if (compare(node->data, data))
   {
     node->right = insert(node->right, data)
   }
 
-  //Балансируем дерево
+  //╨С╨░╨╗╨░╨╜╤Б╨╕╤А╤Г╨╡╨╝ ╨┤╨╡╤А╨╡╨▓╨╛
   node = skew(node);
   node = split(node);
 
   return node;
 }
 
-//Устраняем левое горизонтальное ребро, совершая правый поворот
+//╨г╤Б╤В╤А╨░╨╜╤П╨╡╨╝ ╨╗╨╡╨▓╨╛╨╡ ╨│╨╛╤А╨╕╨╖╨╛╨╜╤В╨░╨╗╤М╨╜╨╛╨╡ ╤А╨╡╨▒╤А╨╛, ╤Б╨╛╨▓╨╡╤А╤И╨░╤П ╨┐╤А╨░╨▓╤Л╨╣ ╨┐╨╛╨▓╨╛╤А╨╛╤В
 template <typename T>
 typename AATree<T>::Node * AATree<T>::skew(Node * node)
 {
   if (node != nullptr && node->left != nullptr)
-    //Проверяем, одного ли уровня текущий узел и его левый сын
+    //╨Я╤А╨╛╨▓╨╡╤А╤П╨╡╨╝, ╨╛╨┤╨╜╨╛╨│╨╛ ╨╗╨╕ ╤Г╤А╨╛╨▓╨╜╤П ╤В╨╡╨║╤Г╤Й╨╕╨╣ ╤Г╨╖╨╡╨╗ ╨╕ ╨╡╨│╨╛ ╨╗╨╡╨▓╤Л╨╣ ╤Б╤Л╨╜
     if (node->left->level == node->level)
     {
       Node * leftChild = node->left;
@@ -118,12 +118,12 @@ typename AATree<T>::Node * AATree<T>::skew(Node * node)
   return node;
 }
 
-//Устраняем два последовательных правых горизонтальных ребра, совершая левый поворот
+//╨г╤Б╤В╤А╨░╨╜╤П╨╡╨╝ ╨┤╨▓╨░ ╨┐╨╛╤Б╨╗╨╡╨┤╨╛╨▓╨░╤В╨╡╨╗╤М╨╜╤Л╤Е ╨┐╤А╨░╨▓╤Л╤Е ╨│╨╛╤А╨╕╨╖╨╛╨╜╤В╨░╨╗╤М╨╜╤Л╤Е ╤А╨╡╨▒╤А╨░, ╤Б╨╛╨▓╨╡╤А╤И╨░╤П ╨╗╨╡╨▓╤Л╨╣ ╨┐╨╛╨▓╨╛╤А╨╛╤В
 template <typename T>
 typename AATree<T>::Node * AATree<T>::split(Node * node)
 {
   if (node != nullptr && node->right != nullptr && node->right->right != nullptr)
-    //Проверяем, одного ли уровня текущий узел и его правый внук
+    //╨Я╤А╨╛╨▓╨╡╤А╤П╨╡╨╝, ╨╛╨┤╨╜╨╛╨│╨╛ ╨╗╨╕ ╤Г╤А╨╛╨▓╨╜╤П ╤В╨╡╨║╤Г╤Й╨╕╨╣ ╤Г╨╖╨╡╨╗ ╨╕ ╨╡╨│╨╛ ╨┐╤А╨░╨▓╤Л╨╣ ╨▓╨╜╤Г╨║
     if (node.level == node.right.right.level)
     {
       Node * rightChild = node->right;
