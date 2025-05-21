@@ -43,28 +43,28 @@ private:
   void clear(Node * node);
 };
 
-//╤ючфр╕ь ъырёё, ъюЄюЁ√щ эрёыхфєхЄё  юЄ std::less ш ёЁртэштрхЄ фрээ√х Єшяр ╥  
+//Создаём класс, который наследуется от std::less и сравнивает данные типа Т  
 template <typename T>
 class AATree<T>::Comparator : public std::less<T>
 {
-  //std::less яюффхЁцштрхЄ operator()
+  //std::less поддерживает operator()
 };
 
-//╩юэёЄЁєъЄюЁ схч ярЁрьхЄЁют
+//Конструктор без параметров
 template <typename T>
 AATree<T>::AATree()
 {
   this->root = nullptr;
 }
 
-//─хёЄЁєъЄюЁ
+//Деструктор
 template <typename T>
 AATree<T>::~AATree()
 {
   clear();
 }
 
-//╧юы№чютрЄхы№ёъшщ ьхЄюф, ъюЄюЁ√щ т√ч√трхЄ тэєЄЁхээшщ ьхЄюф
+//Пользовательский метод, который вызывает внутренний метод
 template <typename T>
 void AATree<T>::insert(T & data)
 {
@@ -74,39 +74,39 @@ void AATree<T>::insert(T & data)
 template <typename T>
 typename AATree<T>::Node * AATree<T>::insert(Node * node, T & data)
 {
-  //╤ючфр╕ь ъюьярЁрЄюЁ
+  //Создаём компаратор
   Comparator compare;
 
-  //┼ёыш єчхы null, Єю ёючфр╕ь эют√щ єчхы ё эют√ь чэрўхэшхь
+  //Если узел null, то создаём новый узел с новым значением
   if (node == nullptr)
   {
     node = new Node(data);
     return node;
   }
-  //┼ёыш эютюх чэрўхэшх ьхэ№°х, шф╕ь т ыхтюх яюффхЁхтю
+  //Если новое значение меньше, идём в левое поддерево
   else if (compare(data, node->data))
   {
     node->left = insert(node->left, data)
   }
-  //┼ёыш эютюх чэрўхэшх сюы№°х, шф╕ь т яЁртюх яюффхЁхтю
+  //Если новое значение больше, идём в правое поддерево
   else if (compare(node->data, data))
   {
     node->right = insert(node->right, data)
   }
 
-  //┴рырэёшЁєхь фхЁхтю
+  //Балансируем дерево
   node = skew(node);
   node = split(node);
 
   return node;
 }
 
-//╙ёЄЁрэ хь ыхтюх уюЁшчюэЄры№эюх ЁхсЁю, ёютхЁ°р  яЁрт√щ яютюЁюЄ
+//Устраняем левое горизонтальное ребро, совершая правый поворот
 template <typename T>
 typename AATree<T>::Node * AATree<T>::skew(Node * node)
 {
   if (node != nullptr && node->left != nullptr)
-    //╧ЁютхЁ хь, юфэюую ыш єЁютэ  Єхъє∙шщ єчхы ш хую ыхт√щ ё√э
+    //Проверяем, одного ли уровня текущий узел и его левый сын
     if (node->left->level == node->level)
     {
       Node * leftChild = node->left;
@@ -118,12 +118,12 @@ typename AATree<T>::Node * AATree<T>::skew(Node * node)
   return node;
 }
 
-//╙ёЄЁрэ хь фтр яюёыхфютрЄхы№э√ї яЁрт√ї уюЁшчюэЄры№э√ї ЁхсЁр, ёютхЁ°р  ыхт√щ яютюЁюЄ
+//Устраняем два последовательных правых горизонтальных ребра, совершая левый поворот
 template <typename T>
 typename AATree<T>::Node * AATree<T>::split(Node * node)
 {
   if (node != nullptr && node->right != nullptr && node->right->right != nullptr)
-    //╧ЁютхЁ хь, юфэюую ыш єЁютэ  Єхъє∙шщ єчхы ш хую яЁрт√щ тэєъ
+    //Проверяем, одного ли уровня текущий узел и его правый внук
     if (node.level == node.right.right.level)
     {
       Node * rightChild = node->right;
