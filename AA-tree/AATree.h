@@ -1,4 +1,5 @@
 ﻿#include <functional>
+#include <stdexcept>
 
 template <typename T>
 class AATree
@@ -8,12 +9,21 @@ public:
   class Comparator;
 
   AATree();
+  AATree(std::initializer_list<T> list);
+
   ~AATree();
 
+  AATree & operator=(AATree otherTree);
+
   void insert(T & data);
-  bool contains(T & data);
   Node * remove(T & data);
   void clear();
+
+  void swap(AATree & firstTree, AATree & secondTree);
+
+  bool contains(T & data);
+  bool isEmpty();
+  size_t getSize();
 
 private:
 
@@ -42,6 +52,8 @@ private:
   Node * remove(Node * node, T & data);
   bool isLeaf(Node * node);
   void deleteSubtree(Node * node);
+  Node * amendLevel(Node * node);
+  size_t getSize(Node * node);
 };
 
 //Создаём класс, который наследуется от std::less и сравнивает данные типа Т  
@@ -58,11 +70,29 @@ AATree<T>::AATree()
   this->root = nullptr;
 }
 
+//Конструктор со списком инициализации
+template <typename T>
+AATree<T>::AATree(std::initializer_list<T> list)
+{
+  for (auto data: list)
+  {
+    insert(data);
+  }
+}
+
 //Деструктор
 template <typename T>
 AATree<T>::~AATree()
 {
   clear();
+}
+
+template<typename T>
+AATree<T> & AATree<T>::operator=(AATree otherTree)
+{
+  swap(*this, other);
+
+  return *this;
 }
 
 //Пользовательский метод, который вызывает внутренний метод
@@ -84,12 +114,16 @@ typename AATree<T>::Node * AATree<T>::insert(Node * node, T & data)
   //Если новое значение меньше, идём в левое поддерево
   else if (compare(data, node->data))
   {
-    node->left = insert(node->left, data)
+    node->left = insert(node->left, data);
   }
   //Если новое значение больше, идём в правое поддерево
   else if (compare(node->data, data))
   {
-    node->right = insert(node->right, data)
+    node->right = insert(node->right, data);
+  }
+  else
+  {
+    throw std::logic_error("Error: Element already exists.\n");
   }
 
   //Балансируем дерево
@@ -187,8 +221,6 @@ typename AATree<T>::Node * AATree<T>::remove(Node * node, T & data)
     //Если нашелся узел с нужным значением
     else
     { 
-      Node * tempNode = nullptr;
-      
       //Если узел является листом
       if (isLeaf(node))
       {
@@ -196,43 +228,50 @@ typename AATree<T>::Node * AATree<T>::remove(Node * node, T & data)
         delete node;
         return nullptr;
       }
-      //Если у узла нет левого сына
+      //Если у узла нет левого поддерева
       else if (node->left == nullptr)
       {
-        tempNode = node->right;
-        //Узел принимает все данные своего правого сына, становится им
-        *node = *tempNode;
-        //Удаляем копию сына
-        delete tempNode;
+        //Преемник - минимальный узел в правом поддереве
+        Node * successor = node->right;
+        while (successor->left != nullptr)
+        {
+          successor = successor->left;
+        }
+        node->data = successor->data;
+        node->right = remove(node->right, successor->data);
       }
-      //Если у узла нет правого сына
-      else if (node->right == nullptr)
-      {
-        tempNode = node->left;
-        //Узел принимает все данные своего левого сына, становится им
-        *node = *tempNode;
-        //Удаляем копию сына
-        delete tempNode;
-      }
-      //Если у узла есть и правый, и левый сын
+      //Если у узла есть левое поддерево
       else
       {
-        //Находим левого крайнего потомка правого сына узла
-        tempNode = node->right;
-        while (tempNode->left != nullptr)
+        //Предшественник - максимальный узел в левом поддереве
+        Node * predecessor = node->left;
+        while (predecessor->right != nullptr)
         {
-          tempNode = tempNode->left;
+          predecessor = predecessor->right;
         }
-        //Узел принимает все данные найденного узла
-        node->data = tempNode->data;
-        //Удаляем копию найденного узла
-        node->right = remove(node->right, tempNode->data);
+        node->data = predecessor->data;
+        node->left = remove(node->left, predecessor->data);
       }
     }
+
+    //Исправляем уровень узла
+    node = amendLevel(node);
+    //Балансируем дерево
+    node = skew(node);
+    if (node->right != nullptr)
+    {
+      node->right = skew(node->right);
+      if (node->right->right != nullptr)
+      {
+        node->right->right = skew(node->right->right);
+      }
+    }
+    node = split(node);
+    if (node->right != nullptr)
+    {
+      node->right = split(node->right);
+    }
   }
-  //Балансируем дерево
-  node = skew(node);
-  node = split(node);
   
   return node;
 }
@@ -243,7 +282,7 @@ bool AATree<T>::isLeaf(Node * node)
 {
   bool isLeaf;
 
-  if (node->level == 1)
+  if (node != nullptr && node->right == nullptr && node->left == nullptr)
   {
     isLeaf = true;
   }
@@ -255,11 +294,38 @@ bool AATree<T>::isLeaf(Node * node)
   return isLeaf;
 }
 
+//Исправление значения уровня узла
+template <typename T>
+typename AATree<T>::Node * AATree<T>::amendLevel(Node * node)
+{
+  int correctLevel = 1;
+
+  if (node != nullptr && node->left != nullptr && node->right != nullptr)
+  {
+    correctLevel = min(node->left->level, node->right->level) + 1;
+  }
+  else if (node != nullptr && (node->left != nullptr || node->right != nullptr))
+  {
+    correctLevel = (node->left != nullptr) ? node->left->level : node->right->level;
+  }
+
+  if (correctLevel < node->level)
+  {
+    node->level = correctLevel;
+    if (node->right != nullptr && correctLevel < node->right->level)
+    {
+      node->right->level = correctLevel;
+    }
+  }
+
+  return node;
+}
+
 //Удаление целого дерева
 template <typename T>
 void AATree<T>::clear()
 {
-  //Вызов рекурсивной функции, удаляющей поддеревья
+  //Вызов внутренней рекурсивной функции, удаляющей поддеревья
   deleteSubtree(root);
 }
 
@@ -276,7 +342,55 @@ void AATree<T>::deleteSubtree(Node * node)
 
     //Удаление узла
     delete node;
-
     node = nullptr;
   }
+}
+
+//Обмен данных деревьев
+template <typename T>
+void AATree<T>::swap(AATree & firstTree, AATree & secondTree)
+{
+  std::swap(firstTree.root, secondTree.root)
+}
+
+//Проверка, является ли дерево пустым
+template <typename T>
+bool AATree<T>::isEmpty()
+{
+  bool treeIsEmpty;
+
+  if (root == nullptr)
+  {
+    treeIsEmpty = true;
+  }
+  else
+  {
+    treeIsEmpty = false;
+  }
+
+  return treeIsEmpty;
+}
+
+//Получение размера дерева (т.е. количества узлов)
+template <typename T>
+size_t AATree<T>::getSize()
+{
+  //Вызов внутреннего рекурсивного метода
+  size_t size = getSize(root);
+
+  return size;
+}
+
+//Внутренний рекурсивный метод для нахождения количества узлов
+template <typename T>
+size_t AATree<T>::getSize(Node * node)
+{
+  size_t size = 0;
+
+  if (node != nullptr)
+  {
+    size = getSize(node->left) + getSize(node->right) + 1;
+  }
+
+  return size;
 }
