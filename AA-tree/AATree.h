@@ -1,5 +1,6 @@
 ﻿#include <functional>
 #include <stdexcept>
+#include <algorithm>
 
 template <typename T>
 class AATree
@@ -16,13 +17,13 @@ public:
 
   AATree & operator=(AATree otherTree);
 
-  void insert(T & data);
-  Node * remove(T & data);
+  void insert(const T & data);
+  void remove(const T & data);
   void clear();
 
   void swap(AATree & firstTree, AATree & secondTree);
 
-  bool contains(T & data);
+  bool contains(const T & data);
   bool isEmpty();
   size_t getSize();
 
@@ -50,10 +51,10 @@ private:
   Node * root;
   Comparator compare;
 
-  Node * insert(Node * node, T & data);
+  Node * insert(Node * node, const T & data);
   Node * skew(Node * node);
   Node * split(Node * node);
-  Node * remove(Node * node, T & data);
+  Node * remove(Node * node, const T & data);
   bool isLeaf(Node * node);
   void deleteSubtree(Node * node);
   Node * amendLevel(Node * node);
@@ -65,6 +66,8 @@ template <typename T>
 class AATree<T>::Iterator
 {
 public:
+  friend class AATree<T>;
+
   Iterator();
 
   ~Iterator() = default;
@@ -76,9 +79,9 @@ public:
   Iterator operator--(int);
 
   T & operator*();
-  const T & operator*();
+  const T & operator*() const;
   T * operator->();
-  const T * operator->();
+  const T * operator->() const;
 
   bool operator==(const Iterator & otherIterator);
   bool operator!=(const Iterator & otherIterator);
@@ -88,7 +91,7 @@ private:
   Node * treeRoot;
 
   Iterator(Node * node, Node * treeRoot);
-  Node * getParent(Node * root, Node * child);
+  Node * getParent(Node * treeRoot, Node * child);
 };
 
 //Конструктор итератора без параметров
@@ -130,11 +133,11 @@ typename AATree<T>::Iterator & AATree<T>::Iterator::operator++()
   else
   {
     //Поднимаемся до первого родителя, для которого текущий узел находится в левом поддереве
-    Node * parent = getParent(root, node);
+    Node * parent = getParent(treeRoot, node);
     while (parent != nullptr && node == parent->right)
     {
       node = parent;
-      parent = getParent(root, parent);
+      parent = getParent(treeRoot, parent);
     }
     node = parent;
   }
@@ -160,7 +163,7 @@ typename AATree<T>::Iterator & AATree<T>::Iterator::operator--()
   if (node == nullptr)
   {
     //Спускаемся к максимальному узлу
-    node = root;
+    node = treeRoot;
     if (node == nullptr)
     {
       throw std::logic_error("Error: Unable to use decrement with iterator.\n");
@@ -183,12 +186,12 @@ typename AATree<T>::Iterator & AATree<T>::Iterator::operator--()
   //3 случай: Если нет левого поддерева
   else
   {
-    //Поднимаемся до первого радителя, для которого текущий узел находится в правом поддереве
-    Node * parent = getParent(root, node)
+    //Поднимаемся до первого родителя, для которого текущий узел находится в правом поддереве
+    Node * parent = getParent(treeRoot, node);
     while (parent != nullptr && node == parent->left)
     {
       node = parent;
-      parent = getParent(root, parent);
+      parent = getParent(treeRoot, parent);
     }
     node = parent;
   }
@@ -197,6 +200,7 @@ typename AATree<T>::Iterator & AATree<T>::Iterator::operator--()
 }
 
 //Постфиксный декремент для итератора
+template <typename T>
 typename AATree<T>::Iterator AATree<T>::Iterator::operator--(int)
 {
   Iterator currIterator = *this;
@@ -221,7 +225,7 @@ T & AATree<T>::Iterator::operator*()
 //Получение константной ссылки на данные в узле
 //Константная версия не позволяет изменять данные в узле
 template <typename T>
-const T & AATree<T>::Iterator::operator*()
+const T & AATree<T>::Iterator::operator*() const
 {
   if (node == nullptr)
   {
@@ -244,7 +248,7 @@ T * AATree<T>::Iterator::operator->()
 
 //Получение константного указателя на данные в узле
 template <typename T>
-const T * AATree<T>::Iterator::operator->()
+const T * AATree<T>::Iterator::operator->() const
 {
   if (node == nullptr)
   {
@@ -268,7 +272,7 @@ bool AATree<T>::Iterator::operator==(const Iterator & otherIterator)
     isEqual = false;
   }
 
-  return equal;
+  return isEqual;
 }
 
 //Оператор != для итератора
@@ -277,7 +281,7 @@ bool AATree<T>::Iterator::operator!=(const Iterator & otherIterator)
 {
   bool isUnequal;
 
-  if !(*this == otherIterator)
+  if (!(*this == otherIterator))
   {
     isUnequal = true;
   }
@@ -303,7 +307,7 @@ typename AATree<T>::Node * AATree<T>::Iterator::getParent(Node * ancestor, Node 
     return ancestor;
   }
 
-  if (compare(child->data, ancestor->data))
+  if (AATree<T>::compare(child->data, ancestor->data))
   {
     return getParent(ancestor->left, child);
   }
@@ -346,20 +350,20 @@ AATree<T>::~AATree()
 template<typename T>
 AATree<T> & AATree<T>::operator=(AATree otherTree)
 {
-  swap(*this, other);
+  swap(*this, otherTree);
 
   return *this;
 }
 
 //Пользовательский метод, который вызывает внутренний метод
 template <typename T>
-void AATree<T>::insert(T & data)
+void AATree<T>::insert(const T & data)
 {
   root = insert(root, data);
 }
 
 template <typename T>
-typename AATree<T>::Node * AATree<T>::insert(Node * node, T & data)
+typename AATree<T>::Node * AATree<T>::insert(Node * node, const T & data)
 {
   //1 случай: Если узел null, то создаём новый узел с новым значением
   if (node == nullptr)
@@ -426,7 +430,7 @@ typename AATree<T>::Node * AATree<T>::split(Node * node)
 
 //Проверка, есть ли узел с заданным значением в дереве
 template <typename T>
-bool AATree<T>::contains(T & data)
+bool AATree<T>::contains(const T & data)
 {
   Node * currNode = root;
 
@@ -454,15 +458,15 @@ bool AATree<T>::contains(T & data)
 
 //Пользовательский метод для удаления узла с заданным значением
 template <typename T>
-typename AATree<T>::Node * AATree<T>::remove(T & data)
+void AATree<T>::remove(const T & data)
 {
-  //Возвращаем внутренний метод для удаления узла с заданным значением
-  return remove(root, data);
+  //Вызываем внутренний метод для удаления узла с заданным значением
+  root = remove(root, data);
 }
 
 //Внутренний метод для удаления узла с заданным значением
 template <typename T>
-typename AATree<T>::Node * AATree<T>::remove(Node * node, T & data)
+typename AATree<T>::Node * AATree<T>::remove(Node * node, const T & data)
 {
   if (node != nullptr)
   { //Пока не нашлось нужное значение, идем по узлам вниз
@@ -558,7 +562,7 @@ typename AATree<T>::Node * AATree<T>::amendLevel(Node * node)
 
   if (node != nullptr && node->left != nullptr && node->right != nullptr)
   {
-    correctLevel = min(node->left->level, node->right->level) + 1;
+    correctLevel = std::min(node->left->level, node->right->level) + 1;
   }
   else if (node != nullptr && (node->left != nullptr || node->right != nullptr))
   {
@@ -606,7 +610,7 @@ void AATree<T>::deleteSubtree(Node * node)
 template <typename T>
 void AATree<T>::swap(AATree & firstTree, AATree & secondTree)
 {
-  std::swap(firstTree.root, secondTree.root)
+  std::swap(firstTree.root, secondTree.root);
 }
 
 //Проверка, является ли дерево пустым
