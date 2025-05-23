@@ -6,6 +6,7 @@ class AATree
 {
 public:
 
+  class Iterator;
   class Comparator;
 
   AATree();
@@ -24,6 +25,9 @@ public:
   bool contains(T & data);
   bool isEmpty();
   size_t getSize();
+
+  Iterator begin();
+  Iterator end();
 
 private:
 
@@ -56,12 +60,263 @@ private:
   size_t getSize(Node * node);
 };
 
-//Создаём класс, который наследуется от std::less и сравнивает данные типа Т  
+//Создаём класс итератор для перемещения по узлам дерева в порядке от меньшего к большему
 template <typename T>
-class AATree<T>::Comparator : public std::less<T>
+class AATree<T>::Iterator
 {
-  //std::less поддерживает operator()
+public:
+  Iterator();
+
+  ~Iterator() = default;
+
+  Iterator & operator=(const Iterator &) = default;
+  Iterator & operator++();
+  Iterator operator++(int);
+  Iterator & operator--();
+  Iterator operator--(int);
+
+  T & operator*();
+  const T & operator*();
+  T * operator->();
+  const T * operator->();
+
+  bool operator==(const Iterator & otherIterator);
+  bool operator!=(const Iterator & otherIterator);
+
+private:
+  Node * node;
+  Node * treeRoot;
+
+  Iterator(Node * node, Node * treeRoot);
+  Node * getParent(Node * root, Node * child);
 };
+
+//Конструктор итератора без параметров
+template <typename T>
+AATree<T>::Iterator::Iterator()
+{
+  this->node = nullptr;
+  this->treeRoot = nullptr;
+}
+
+//Консруктор итератора с параметрами
+template <typename T>
+AATree<T>::Iterator::Iterator(Node * node, Node * treeRoot)
+{
+  this->node = node;
+  this->treeRoot = treeRoot;
+}
+
+//Префиксный инкремент для итератора
+template <typename T>
+typename AATree<T>::Iterator & AATree<T>::Iterator::operator++()
+{
+  if (node == nullptr)
+  {
+    throw std::logic_error("Error: Unable to use increment with iterator.\n");
+  }
+
+  //1 случай: Если есть правое поддерево
+  if (node->right != nullptr)
+  {
+    //Спускаемся к минимальному узлу в правом поддереве (т.е. к следующему по возрастанию значению)
+    node = node->right;
+    while (node->left != nullptr)
+    {
+      node = node->left;
+    }
+  }
+  //2 случай: Если нет правого поддерева
+  else
+  {
+    //Поднимаемся до первого родителя, для которого текущий узел находится в левом поддереве
+    Node * parent = getParent(root, node);
+    while (parent != nullptr && node == parent->right)
+    {
+      node = parent;
+      parent = getParent(root, parent);
+    }
+    node = parent;
+  }
+
+  return *this;
+}
+
+//Постфиксный инкремент для итератора
+template <typename T>
+typename AATree<T>::Iterator AATree<T>::Iterator::operator++(int)
+{
+  Iterator currIterator = *this;
+  ++(*this);
+
+  return currIterator;
+}
+
+//Префиксный декремент для итератора
+template <typename T>
+typename AATree<T>::Iterator & AATree<T>::Iterator::operator--()
+{
+  //1 случай: Если итератор на end()
+  if (node == nullptr)
+  {
+    //Спускаемся к максимальному узлу
+    node = root;
+    if (node == nullptr)
+    {
+      throw std::logic_error("Error: Unable to use decrement with iterator.\n");
+    }
+    while (node->right != nullptr)
+    {
+      node = node->right;
+    }
+  }
+  //2 случай: Если есть левое поддерево
+  else if (node->left != nullptr)
+  {
+    //Спускаемся к минимальному узлу в левом поддереве (т.е. к следующему по убыванию значению)
+    node = node->left;
+    while (node->right != nullptr)
+    {
+      node = node->right;
+    }
+  }
+  //3 случай: Если нет левого поддерева
+  else
+  {
+    //Поднимаемся до первого радителя, для которого текущий узел находится в правом поддереве
+    Node * parent = getParent(root, node)
+    while (parent != nullptr && node == parent->left)
+    {
+      node = parent;
+      parent = getParent(root, parent);
+    }
+    node = parent;
+  }
+
+  return *this;
+}
+
+//Постфиксный декремент для итератора
+typename AATree<T>::Iterator AATree<T>::Iterator::operator--(int)
+{
+  Iterator currIterator = *this;
+  --(*this);
+
+  return currIterator;
+}
+
+//Получение ссылки на данные в узле
+//Неконстантная версия позволяет изменять данные в узле
+template <typename T>
+T & AATree<T>::Iterator::operator*()
+{
+  if (node == nullptr)
+  {
+    throw std::logic_error("Error: Dereferencing end iterator.");
+  }
+
+  return node->data;
+}
+
+//Получение константной ссылки на данные в узле
+//Константная версия не позволяет изменять данные в узле
+template <typename T>
+const T & AATree<T>::Iterator::operator*()
+{
+  if (node == nullptr)
+  {
+    throw std::logic_error("Error: Dereferencing end iterator.");
+  }
+
+  return node->data;
+}
+
+//Получение указателя на данные в узле
+template <typename T>
+T * AATree<T>::Iterator::operator->()
+{
+  if (node == nullptr)
+  {
+    throw std::logic_error("Error: Dereferencing end iterator.");
+  }
+  return &(node->data);
+}
+
+//Получение константного указателя на данные в узле
+template <typename T>
+const T * AATree<T>::Iterator::operator->()
+{
+  if (node == nullptr)
+  {
+    throw std::logic_error("Error: Dereferencing end iterator.");
+  }
+  return &(node->data);
+}
+
+//Оператор == для итератора
+template <typename T>
+bool AATree<T>::Iterator::operator==(const Iterator & otherIterator)
+{
+  bool isEqual;
+
+  if (node == otherIterator.node)
+  {
+    isEqual = true;
+  }
+  else
+  {
+    isEqual = false;
+  }
+
+  return equal;
+}
+
+//Оператор != для итератора
+template <typename T>
+bool AATree<T>::Iterator::operator!=(const Iterator & otherIterator)
+{
+  bool isUnequal;
+
+  if !(*this == otherIterator)
+  {
+    isUnequal = true;
+  }
+  else
+  {
+    isUnequal = false;
+  }
+
+  return isUnequal;
+}
+
+//Внутренний метод для нахождения родителя для данного узла
+template <typename T>
+typename AATree<T>::Node * AATree<T>::Iterator::getParent(Node * ancestor, Node * child)
+{
+  if (ancestor == nullptr || child == nullptr || ancestor == child)
+  {
+    return nullptr;
+  }
+
+  if (ancestor->left == child || ancestor->right == child)
+  {
+    return ancestor;
+  }
+
+  if (compare(child->data, ancestor->data))
+  {
+    return getParent(ancestor->left, child);
+  }
+  else
+  {
+    return getParent(ancestor->right, child);
+  }
+}
+
+//Создаём класс, который наследуется от std::less и сравнивает данные типа Т  
+//std::less поддерживает operator()
+template <typename T>
+class AATree<T>::Comparator : public std::less<T> {};
 
 //Конструктор без параметров
 template <typename T>
@@ -87,6 +342,7 @@ AATree<T>::~AATree()
   clear();
 }
 
+//Оператор = для дерева
 template<typename T>
 AATree<T> & AATree<T>::operator=(AATree otherTree)
 {
@@ -105,18 +361,18 @@ void AATree<T>::insert(T & data)
 template <typename T>
 typename AATree<T>::Node * AATree<T>::insert(Node * node, T & data)
 {
-  //Если узел null, то создаём новый узел с новым значением
+  //1 случай: Если узел null, то создаём новый узел с новым значением
   if (node == nullptr)
   {
     node = new Node(data);
     return node;
   }
-  //Если новое значение меньше, идём в левое поддерево
+  //2 случай: Если новое значение меньше, идём в левое поддерево
   else if (compare(data, node->data))
   {
     node->left = insert(node->left, data);
   }
-  //Если новое значение больше, идём в правое поддерево
+  //3 случай: Если новое значение больше, идём в правое поддерево
   else if (compare(node->data, data))
   {
     node->right = insert(node->right, data);
@@ -221,14 +477,14 @@ typename AATree<T>::Node * AATree<T>::remove(Node * node, T & data)
     //Если нашелся узел с нужным значением
     else
     { 
-      //Если узел является листом
+      //1 случай: Если узел является листом
       if (isLeaf(node))
       {
         //Удаляем узел
         delete node;
         return nullptr;
       }
-      //Если у узла нет левого поддерева
+      //2 случай: Если у узла нет левого поддерева
       else if (node->left == nullptr)
       {
         //Преемник - минимальный узел в правом поддереве
@@ -240,7 +496,7 @@ typename AATree<T>::Node * AATree<T>::remove(Node * node, T & data)
         node->data = successor->data;
         node->right = remove(node->right, successor->data);
       }
-      //Если у узла есть левое поддерево
+      //3 случай: Если у узла есть левое поддерево
       else
       {
         //Предшественник - максимальный узел в левом поддереве
@@ -393,4 +649,29 @@ size_t AATree<T>::getSize(Node * node)
   }
 
   return size;
+}
+
+//Получение итератора, указывающего на первый (наименьший) элемент в дереве
+template<typename T>
+AATree<T>::Iterator AATree<T>::begin()
+{
+  if (isEmpty())
+  {
+    return end();
+  }
+
+  Node * minNode = root;
+  while (minNode->left != nullptr)
+  {
+    minNode = minNode->left;
+  }
+
+  return Iterator(minNode, root);
+}
+
+//Получение итератора, указывающего на последний (несуществующий) элемент в дереве
+template <typename T>
+AATree<T>::Iterator AATree<T>::end()
+{
+  return Iterator(nullptr, root);
 }
